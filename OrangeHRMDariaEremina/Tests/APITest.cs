@@ -26,13 +26,13 @@ public class APITest
         _client.BaseAddress = baseUri;
 
         var values = new List<KeyValuePair<string, string>>();
-        values.Add(new KeyValuePair<string, string>("grant_type", "client_credentials"));
+        values.Add(new KeyValuePair<string, string>("key", "value"));
         var content = new FormUrlEncodedContent(values);
 
         var authenticationString = $"{ConfigurationData.AdminUserName}:{ConfigurationData.AdminPassword}";
         var base64EncodedAuthenticationString = Convert.ToBase64String(System.Text.ASCIIEncoding.ASCII.GetBytes(authenticationString));
 
-        var requestMessage = new HttpRequestMessage(HttpMethod.Post, "/oauth/token");
+        var requestMessage = new HttpRequestMessage(HttpMethod.Post, "/auth/login");
         requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Basic", base64EncodedAuthenticationString);
         requestMessage.Content = content;
     }
