@@ -23,9 +23,9 @@ public class APITest
     private IBrowser? _browser;
     private IBrowserContext? _context;
     protected IPage _page = null!;
-    static byte[] imageBytes = File.ReadAllBytes(".Files\\avatar.png");
-    static string base64String = Convert.ToBase64String(imageBytes);
+    private string? _base64String;
 
+    [AllureBefore("Test Init")]
     [SetUp]
     public async Task SetUpAPITesting()
     {
@@ -100,7 +100,7 @@ public class APITest
         addEmployeeData.Add("lastName", user.LastName);
         addEmployeeData.Add("empPicture", new PictureData
         {
-            base64 = base64String,
+            base64 = ConvertImageToBase64(),
             name = "avatar.png",
             type = "image/png",
             size = new FileInfo(".Files\\avatar.png").Length
@@ -136,6 +136,7 @@ public class APITest
         Assert.True(responsePersonalDetails.Ok);
     }
 
+    [AllureAfter("Test Clean")]
     [TearDown]
     public async Task TearDownAPITesting()
     {
@@ -160,6 +161,22 @@ public class APITest
         }
 
         return empNumber;
+    }
+
+    private string? ConvertImageToBase64()
+    {
+        string filePath = Path.Combine(AppContext.BaseDirectory, ".Files", "avatar.png");
+        if (File.Exists(filePath))
+        {
+            byte[] imageBytes = File.ReadAllBytes(filePath);
+            _base64String = Convert.ToBase64String(imageBytes);
+        }
+        else
+        {
+            throw new FileNotFoundException($"Unable to find file at path: {filePath}");
+        }
+
+        return _base64String;
     }
 
 }
