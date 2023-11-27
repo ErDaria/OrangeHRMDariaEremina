@@ -165,7 +165,7 @@ public class APITest
 
     private string? ConvertImageToBase64()
     {
-        string filePath = Path.Combine(AppContext.BaseDirectory, "avatar.png");
+        string filePath = Path.Combine("./avatar.png");
         if (File.Exists(filePath))
         {
             byte[] imageBytes = File.ReadAllBytes(filePath);

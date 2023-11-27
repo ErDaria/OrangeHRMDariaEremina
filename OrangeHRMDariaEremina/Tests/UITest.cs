@@ -105,7 +105,7 @@ public class UITest : TestFixtureSetup
 
         // Upload file
         var fileChooser = _page.Locator("input[type=\"file\"]");
-        await fileChooser.SetInputFilesAsync(".Files\\avatar.png");
+        await fileChooser.SetInputFilesAsync("./avatar.png");
 
         // Save the employee details
         await _page.GetByRole(AriaRole.Button, new() { Name = "Save" }).ClickAsync();
