@@ -103,7 +103,7 @@ public class APITest
             base64 = ConvertImageToBase64(),
             name = "avatar.png",
             type = "image/png",
-            size = new FileInfo(".Files\\avatar.png").Length
+            size = new FileInfo("./avatar.png").Length
         });
         addEmployeeData.Add("employeeId", fourDigitNumber.ToString());
 
