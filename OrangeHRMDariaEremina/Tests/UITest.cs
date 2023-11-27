@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Text.RegularExpressions;
 using Microsoft.Playwright;
+using NUnit.Allure.Attributes;
 using NUnit.Framework;
 using OrangeHRMDariaEremina.Utils;
 using OrangeHRMDariaEremina.Utils.Models;
@@ -8,6 +9,7 @@ using BrowserType = OrangeHRMDariaEremina.Utils.Models.BrowserType;
 
 namespace OrangeHRMDariaEremina.Tests;
 
+[AllureFeature("Add employee UI")]
 [TestFixture(BrowserType.Chrome)]
 [TestFixture(BrowserType.Edge)]
 public class UITest : TestFixtureSetup
@@ -18,6 +20,8 @@ public class UITest : TestFixtureSetup
     // Constructor
     public UITest(BrowserType browserType) : base(browserType) { }
 
+    [AllureName("Open web page")]
+    [AllureTag("regress", "smoke")]
     [Test, Order(1)]
     public async Task S1_OpenWebPage()
     {
@@ -25,6 +29,8 @@ public class UITest : TestFixtureSetup
         await Assertions.Expect(_page).ToHaveTitleAsync("OrangeHRM");
     }
 
+    [AllureName("Login negative case")]
+    [AllureTag("regress", "smoke")]
     [Test, Order(2)]
     public async Task S2_LoginNegativeCase()
     {
@@ -38,6 +44,8 @@ public class UITest : TestFixtureSetup
         await Assertions.Expect(_page.GetByText("Invalid credentials")).ToBeVisibleAsync();
     }
 
+    [AllureName("Login posiive case")]
+    [AllureTag("regress", "smoke")]
     [Test, Order(3)]
     public async Task S3_LoginPositiveCase()
     {
@@ -50,6 +58,8 @@ public class UITest : TestFixtureSetup
         await Assertions.Expect(_page.GetByRole(AriaRole.Heading, new() { Name = "Dashboard" })).ToBeVisibleAsync();
     }
 
+    [AllureName("Add new employee negative case")]
+    [AllureTag("regress", "smoke")]
     [Test, Order(4)]
     public async Task S4_AddNewEmployeeNegativeCase()
     {
@@ -67,6 +77,8 @@ public class UITest : TestFixtureSetup
         await Assertions.Expect(_page.GetByText("Required").First).ToBeVisibleAsync();
     }
 
+    [AllureName("Add new employee positive case")]
+    [AllureTag("regress", "smoke")]
     // This part of test will create several users from appsettings.json file and verify that they were added in the Employee list
     [TestCaseSource(typeof(ConfigurationData), nameof(ConfigurationData.GetUsersList))]
     [Test, Order(5)]
@@ -134,6 +146,8 @@ public class UITest : TestFixtureSetup
         await Assertions.Expect(_page.Locator("div").Filter(new() { HasTextRegex = new Regex("^Employee IdOther Id$") }).GetByRole(AriaRole.Textbox).First).ToHaveValueAsync(employeeId);
     }
 
+    [AllureName("Delete new employee")]
+    [AllureTag("regress", "smoke")]
     [TestCaseSource(typeof(ConfigurationData), nameof(ConfigurationData.GetUsersList))]
     [Test, Order(6)]
     public async Task S6_DeleteCreatedUsers(User user)
