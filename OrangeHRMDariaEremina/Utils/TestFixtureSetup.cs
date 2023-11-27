@@ -34,7 +34,8 @@ public class TestFixtureSetup
         {
             Headless = true,
             Timeout = 120_000,
-            Channel = driver.GetBrowserChannel(_browserType)
+            Channel = driver.GetBrowserChannel(_browserType),
+            SlowMo = 500
         };
 
         // Initialize browser

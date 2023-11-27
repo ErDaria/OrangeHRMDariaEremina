@@ -1,5 +1,6 @@
 ﻿using System.Net.Http.Headers;
 using System.Text;
+using System.Text.Json;
 using Microsoft.Playwright;
 using Newtonsoft.Json;
 using NUnit.Allure.Attributes;
@@ -7,6 +8,7 @@ using NUnit.Allure.Core;
 using NUnit.Framework;
 using OrangeHRMDariaEremina.Utils;
 using OrangeHRMDariaEremina.Utils.Models;
+using BrowserType = OrangeHRMDariaEremina.Utils.Models.BrowserType;
 
 namespace OrangeHRMDariaEremina.Tests;
 
@@ -17,6 +19,12 @@ namespace OrangeHRMDariaEremina.Tests;
 public class APITest
 {
     private IAPIRequestContext Request = null;
+    private string? _state;
+    private IBrowser? _browser;
+    private IBrowserContext? _context;
+    protected IPage _page = null!;
+    static byte[] imageBytes = File.ReadAllBytes(".Files\\avatar.png");
+    static string base64String = Convert.ToBase64String(imageBytes);
 
     [SetUp]
     public async Task SetUpAPITesting()
@@ -26,16 +34,40 @@ public class APITest
 
     private async Task CreateAPIRequestContext()
     {
-        var headers = new Dictionary<string, string>();
+        // Start driver
+        var driver = new PlaywrightDriver();
 
-        // Set headers
-        headers.Add("Username", ConfigurationData.AdminUserName);
-        headers.Add("Password", ConfigurationData.AdminPassword);
+        // Add launch options
+        var launchOptions = new BrowserTypeLaunchOptions
+        {
+            Headless = true,
+            Timeout = 120_000,
+            Channel = driver.GetBrowserChannel(BrowserType.Chrome)
+        };
 
+        // Initialize browser
+        _browser = await driver.InitializeBrowser(BrowserType.Chrome, launchOptions);
+        _context = await _browser.NewContextAsync();
+
+        // Open web page
+        _page = await _context.NewPageAsync();
+        await _page.GotoAsync(ConfigurationData.WebAddress);
+
+        await _page.GetByPlaceholder("Username").FillAsync(ConfigurationData.AdminUserName);
+        await _page.GetByPlaceholder("Password").FillAsync(ConfigurationData.AdminPassword);
+        await _page.GetByRole(AriaRole.Button, new() { Name = "Login" }).ClickAsync();
+
+        // Verify the home page is opened
+        await Assertions.Expect(_page.GetByRole(AriaRole.Heading, new() { Name = "Dashboard" })).ToBeVisibleAsync();
+
+        // Store session
+        _state = await _context.StorageStateAsync();
+
+        // Create playwright API context
         var _playwright = await Playwright.CreateAsync();
         Request = await _playwright.APIRequest.NewContextAsync(new() {
-            BaseURL = ConfigurationData.WebAddress + "/web/index.php/auth/login",
-            ExtraHTTPHeaders = headers,
+            BaseURL = ConfigurationData.WebAddress,
+            StorageState = _state
         });
     }
 
@@ -44,9 +76,11 @@ public class APITest
     [Test, Order(1)]
     public async Task LoginTest()
     {
-       // Validate that admin has been logged in
-       var responseValidate = await Request.PostAsync("/web/index.php/auth/validate");
-       Assert.True(responseValidate.Ok);
+        // Validate that admin has been logged in
+        var responseValidate = await Request.PostAsync("/web/index.php/auth/validate");
+
+        // Validate the response
+        Assert.True(responseValidate.Ok);
     }
 
     [AllureName("Add Employee via API")]
@@ -60,15 +94,46 @@ public class APITest
         int fourDigitNumber = random.Next(1000, 10000);
 
         // Create body
-        var addEmployeeData = new Dictionary<string, string>();
+        var addEmployeeData = new Dictionary<string, object>();
         addEmployeeData.Add("firstName", user.FirstName);
         addEmployeeData.Add("middleName", "");
         addEmployeeData.Add("lastName", user.LastName);
-        addEmployeeData.Add("empPicture", null);
+        addEmployeeData.Add("empPicture", new PictureData
+        {
+            base64 = base64String,
+            name = "avatar.png",
+            type = "image/png",
+            size = new FileInfo(".Files\\avatar.png").Length
+        });
         addEmployeeData.Add("employeeId", fourDigitNumber.ToString());
 
-        var response = await Request.PostAsync("/web/index.php/api/v2/pim/employees", new() { DataObject = addEmployeeData });
-        var g = response.Status;
+        // Add employee
+        var responsePost = await Request.PostAsync("/web/index.php/api/v2/pim/employees",
+            new() { DataObject = addEmployeeData });
+
+        // Validate the response
+        Assert.True(responsePost.Ok);
+
+        // Create parameters
+        var parameters = new List<KeyValuePair<string, object>>
+        {
+            new KeyValuePair<string, object>("nameOrId", fourDigitNumber.ToString()),
+            new KeyValuePair<string, object>("includeEmployees", "onlyCurrent")
+        };
+
+        // Find the newly created employee
+        var responseAdd = await Request.GetAsync("/web/index.php/api/v2/pim/employees", new() { Params = parameters });
+
+        // Validate the response
+        Assert.True(responsePost.Ok);
+
+        var issuesJsonResponse = await responseAdd.JsonAsync();
+
+        string empNumber = GetEmpNumber(issuesJsonResponse.Value);
+
+        // Validate the personal details
+        var responsePersonalDetails = await Request.GetAsync("/web/index.php/api/v2/pim/employees/" + empNumber);
+        Assert.True(responsePersonalDetails.Ok);
     }
 
     [TearDown]
@@ -76,4 +141,25 @@ public class APITest
     {
         await Request.DisposeAsync();
     }
+
+    private string GetEmpNumber(JsonElement jsonElement)
+    {
+        string empNumber = null;
+
+        if (jsonElement.TryGetProperty("data", out JsonElement dataElement) &&
+            dataElement.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in dataElement.EnumerateArray())
+            {
+                if (item.TryGetProperty("empNumber", out JsonElement empNumberElement) &&
+                    empNumberElement.ValueKind == JsonValueKind.Number)
+                {
+                    empNumber = empNumberElement.ToString();
+                }
+            }
+        }
+
+        return empNumber;
+    }
+
 }

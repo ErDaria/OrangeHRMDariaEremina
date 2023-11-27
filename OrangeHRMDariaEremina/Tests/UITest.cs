@@ -94,7 +94,7 @@ public class UITest : TestFixtureSetup
 
         // Generate random id and fill it in employee id textbox
         Random random = new Random();
-        int fourDigitNumber = random.Next(1000, 10000);
+        int fourDigitNumber = random.Next(1000, 1000000);
         await _page.GetByRole(AriaRole.Textbox).Last.FillAsync(fourDigitNumber.ToString());
 
         // Save EmployeeId
@@ -103,15 +103,9 @@ public class UITest : TestFixtureSetup
         // Attach picture
         await _page.Locator("form").GetByRole(AriaRole.Img, new() { Name = "profile picture" }).ClickAsync();
 
-        // Take a screenshot
-        await _page.ScreenshotAsync(new()
-        {
-            Path = ".Files\\Screenshot_png.png",
-        });
-
         // Upload file
         var fileChooser = _page.Locator("input[type=\"file\"]");
-        await fileChooser.SetInputFilesAsync(".Files\\Screenshot_png.png");
+        await fileChooser.SetInputFilesAsync(".Files\\avatar.png");
 
         // Save the employee details
         await _page.GetByRole(AriaRole.Button, new() { Name = "Save" }).ClickAsync();
