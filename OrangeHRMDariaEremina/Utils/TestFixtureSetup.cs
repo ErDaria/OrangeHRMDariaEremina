@@ -32,7 +32,7 @@ public class TestFixtureSetup
         // Add launch options
         var launchOptions = new BrowserTypeLaunchOptions
         {
-            Headless = false,
+            Headless = true,
             Timeout = 120_000,
             Channel = driver.GetBrowserChannel(_browserType)
         };

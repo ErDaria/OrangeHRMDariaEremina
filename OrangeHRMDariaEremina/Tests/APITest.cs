@@ -47,7 +47,6 @@ public class APITest
        // Validate that admin has been logged in
        var responseValidate = await Request.PostAsync("/web/index.php/auth/validate");
        Assert.True(responseValidate.Ok);
-
     }
 
     [AllureName("Add Employee via API")]
@@ -61,19 +60,15 @@ public class APITest
         int fourDigitNumber = random.Next(1000, 10000);
 
         // Create body
-        var addEmployeeData = new
-        {
-            firstName = user.FirstName,
-            lastName = user.LastName,
-            empPicture = ".Files\\Screenshot_png.png",
-            employeeId = fourDigitNumber
-        };
+        var addEmployeeData = new Dictionary<string, string>();
+        addEmployeeData.Add("firstName", user.FirstName);
+        addEmployeeData.Add("middleName", "");
+        addEmployeeData.Add("lastName", user.LastName);
+        addEmployeeData.Add("empPicture", null);
+        addEmployeeData.Add("employeeId", fourDigitNumber.ToString());
 
-        var content = new StringContent(JsonConvert.SerializeObject(addEmployeeData), Encoding.UTF8, "application/json");
-
-        //var response = await _client.PostAsync(ConfigurationData.WebAddress + "/api/v2/pim/employees", content);
-
-
+        var response = await Request.PostAsync("/web/index.php/api/v2/pim/employees", new() { DataObject = addEmployeeData });
+        var g = response.Status;
     }
 
     [TearDown]
