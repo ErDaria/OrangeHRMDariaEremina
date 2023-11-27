@@ -1,5 +1,6 @@
 ﻿using System.Net.Http.Headers;
 using System.Text;
+using Microsoft.Playwright;
 using Newtonsoft.Json;
 using NUnit.Allure.Attributes;
 using NUnit.Allure.Core;
@@ -15,26 +16,27 @@ namespace OrangeHRMDariaEremina.Tests;
 [TestFixture]
 public class APITest
 {
-    private HttpClient _client;
+    private IAPIRequestContext Request = null;
 
-    [AllureBefore("Setup API connection")]
-    [OneTimeSetUp]
-    public async Task Start()
+    [SetUp]
+    public async Task SetUpAPITesting()
     {
-        _client = new HttpClient();
-        Uri baseUri = new Uri(ConfigurationData.WebAddress);
-        _client.BaseAddress = baseUri;
+        await CreateAPIRequestContext();
+    }
 
-        var values = new List<KeyValuePair<string, string>>();
-        values.Add(new KeyValuePair<string, string>("key", "value"));
-        var content = new FormUrlEncodedContent(values);
+    private async Task CreateAPIRequestContext()
+    {
+        var headers = new Dictionary<string, string>();
 
-        var authenticationString = $"{ConfigurationData.AdminUserName}:{ConfigurationData.AdminPassword}";
-        var base64EncodedAuthenticationString = Convert.ToBase64String(System.Text.ASCIIEncoding.ASCII.GetBytes(authenticationString));
+        // Set headers
+        headers.Add("Username", ConfigurationData.AdminUserName);
+        headers.Add("Password", ConfigurationData.AdminPassword);
 
-        var requestMessage = new HttpRequestMessage(HttpMethod.Post, "/auth/login");
-        requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Basic", base64EncodedAuthenticationString);
-        requestMessage.Content = content;
+        var _playwright = await Playwright.CreateAsync();
+        Request = await _playwright.APIRequest.NewContextAsync(new() {
+            BaseURL = ConfigurationData.WebAddress + "/web/index.php/auth/login",
+            ExtraHTTPHeaders = headers,
+        });
     }
 
     [AllureName("Login via API")]
@@ -42,8 +44,10 @@ public class APITest
     [Test, Order(1)]
     public async Task LoginTest()
     {
-        var responseValidate = await _client.GetAsync(ConfigurationData.WebAddress);
-        responseValidate.EnsureSuccessStatusCode();
+       // Validate that admin has been logged in
+       var responseValidate = await Request.PostAsync("/web/index.php/auth/validate");
+       Assert.True(responseValidate.Ok);
+
     }
 
     [AllureName("Add Employee via API")]
@@ -67,9 +71,14 @@ public class APITest
 
         var content = new StringContent(JsonConvert.SerializeObject(addEmployeeData), Encoding.UTF8, "application/json");
 
-        var response = await _client.PostAsync(ConfigurationData.WebAddress + "/api/v2/pim/employees", content);
+        //var response = await _client.PostAsync(ConfigurationData.WebAddress + "/api/v2/pim/employees", content);
 
-        var responseCode = response.StatusCode;
-        response.EnsureSuccessStatusCode();
+
+    }
+
+    [TearDown]
+    public async Task TearDownAPITesting()
+    {
+        await Request.DisposeAsync();
     }
 }

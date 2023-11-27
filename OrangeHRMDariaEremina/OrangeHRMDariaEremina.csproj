@@ -25,9 +25,7 @@
 
     <ItemGroup>
         <None Update="appsettings.json" CopyToOutputDirectory="Always" />
-        <None Update="playwright.ps1">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
+        <None Update="playwright.ps1" CopyToOutputDirectory="Always" />
     </ItemGroup>
 
 </Project>
