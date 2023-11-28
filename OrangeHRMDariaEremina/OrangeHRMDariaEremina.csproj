@@ -25,6 +25,7 @@
 
     <ItemGroup>
         <None Update="appsettings.json" CopyToOutputDirectory="Always" />
+        <None Update="allureConfig.json" CopyToOutputDirectory="Always" />
         <None Update="playwright.ps1" CopyToOutputDirectory="Always" />
         <None Update="avatar.png" CopyToOutputDirectory="Always" />
     </ItemGroup>
