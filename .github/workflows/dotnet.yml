@@ -1,0 +1,90 @@
+# This workflow will build a .NET project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
+
+name: .RunTests
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 6.0.x
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet build --no-restore
+
+  testUI:
+    needs: build
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup dotnet
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 6.0.x
+    - run: dotnet build
+    - name: Ensure browsers are installed
+      run: pwsh /home/runner/work/OrangeHRMDariaEremina/OrangeHRMDariaEremina/OrangeHRMDariaEremina/bin/Debug/net7.0/playwright.ps1 install --with-deps
+    - name: Run UI tests
+      run:  dotnet test --filter OrangeHRMDariaEremina.Tests.UITest
+  
+  testAPI:
+    needs: testUI
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup dotnet
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 6.0.x
+    - run: dotnet build
+    - name: Ensure browsers are installed
+      run: pwsh /home/runner/work/OrangeHRMDariaEremina/OrangeHRMDariaEremina/OrangeHRMDariaEremina/bin/Debug/net7.0/playwright.ps1 install --with-deps
+    - name: Run API tests
+      run:  dotnet test --filter OrangeHRMDariaEremina.Tests.APITest
+  
+  report:
+    needs: testAPI
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Get Allure history
+        uses: actions/checkout@v4
+        if: always()
+        continue-on-error: true
+        with:
+         ref: gh-pages
+         path: gh-pages
+
+      - name: Generate Allure Report
+        uses: simple-elf/allure-report-action@v1.7
+        if: always()
+        with:
+         allure_results: /home/runner/work/OrangeHRMDariaEremina/OrangeHRMDariaEremina/OrangeHRMDariaEremina/bin/Debug/net7.0/allure-results
+         allure_history: allure-history
+
+      - name: Deploy report to GitHub Pages
+        if: always()
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+         github_token: ${{ secrets.GITHUB_TOKEN }}
+         publish_dir: allure-history
+         publish_branch: gh-pages
+  
