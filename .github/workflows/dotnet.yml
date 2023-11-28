@@ -58,4 +58,32 @@ jobs:
       run: pwsh /home/runner/work/OrangeHRMDariaEremina/OrangeHRMDariaEremina/OrangeHRMDariaEremina/bin/Debug/net7.0/playwright.ps1 install --with-deps
     - name: Run API tests
       run:  dotnet test --filter OrangeHRMDariaEremina.Tests.APITest
+  report:
+    needs: testAPI
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Get Allure history
+      uses: actions/checkout@v4
+      if: always()
+      continue-on-error: true
+      with:
+       ref: master
+       path: master
+
+    - name: Generate Allure Report
+      uses: simple-elf/allure-report-action@v1.7
+      if: always()
+      with:
+       allure_results: allure-results
+       allure_history: allure-history
+
+    - name: Deploy report to GitHub Pages
+      if: always()
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+       github_token: ${{ secrets.GITHUB_TOKEN }}
+       publish_dir: allure-history
+       publish_branch: master
   
