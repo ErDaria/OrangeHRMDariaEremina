@@ -15,7 +15,7 @@ namespace OrangeHRMDariaEremina.Tests;
 public class UITest : TestFixtureSetup
 {
     // placeholder for an unique employee Id
-    private string employeeId = String.Empty;
+    private string? employeeId;
 
     // Constructor
     public UITest(BrowserType browserType) : base(browserType) { }
