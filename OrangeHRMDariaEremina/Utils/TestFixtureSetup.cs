@@ -3,6 +3,7 @@ using NUnit.Allure.Attributes;
 using NUnit.Allure.Core;
 using NUnit.Framework;
 using NUnit.Framework.Interfaces;
+using OrangeHRMDariaEremina.Pages;
 using BrowserType = OrangeHRMDariaEremina.Utils.Models.BrowserType;
 
 namespace OrangeHRMDariaEremina.Utils;
@@ -15,6 +16,11 @@ public class TestFixtureSetup
     private IBrowserContext? _context;
     protected IPage _page = null!;
     private readonly BrowserType _browserType;
+
+    // Instances pages
+    protected LoginPage _loginPage = null!;
+    protected EmployeeListPage _employeeListPage = null!;
+    protected AddEmployeePage _addEmployeePage = null!;
 
     // Constructor
     public TestFixtureSetup(BrowserType browserType)
@@ -54,6 +60,9 @@ public class TestFixtureSetup
     {
         // Start web page before test
         _page = await RunBeforeAnyTestsAsync();
+        _loginPage = new LoginPage(_page);
+        _addEmployeePage = new AddEmployeePage(_page);
+        _employeeListPage = new EmployeeListPage(_page);
     }
 
     [AllureAfter("Dispose session")]

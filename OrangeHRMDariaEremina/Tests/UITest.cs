@@ -35,9 +35,9 @@ public class UITest : TestFixtureSetup
     public async Task S2_LoginNegativeCase()
     {
         // Log in with invalid credentials
-        await _page.GetByPlaceholder("Username").FillAsync("Wrong name");
-        await _page.GetByPlaceholder("Password").FillAsync("Wrong password");
-        await _page.GetByRole(AriaRole.Button, new() { Name = "Login" }).ClickAsync();
+        await _loginPage.FillWithText("Username", "Wrong name");
+        await _loginPage.FillWithText("Password", "Wrong password");
+        await _loginPage.ClickOnLogin();
 
         // Verify "Invalid credentials" message
         await Assertions.Expect(_page.GetByRole(AriaRole.Alert)).ToBeVisibleAsync();
@@ -50,9 +50,9 @@ public class UITest : TestFixtureSetup
     public async Task S3_LoginPositiveCase()
     {
         // Log in as Admin
-        await _page.GetByPlaceholder("Username").FillAsync(ConfigurationData.AdminUserName);
-        await _page.GetByPlaceholder("Password").FillAsync(ConfigurationData.AdminPassword);
-        await _page.GetByRole(AriaRole.Button, new() { Name = "Login" }).ClickAsync();
+        await _loginPage.FillWithText("Username", ConfigurationData.AdminUserName);
+        await _loginPage.FillWithText("Password", ConfigurationData.AdminPassword);
+        await _loginPage.ClickOnLogin();
 
         // Verify the home page is opened
         await Assertions.Expect(_page.GetByRole(AriaRole.Heading, new() { Name = "Dashboard" })).ToBeVisibleAsync();
@@ -64,14 +64,14 @@ public class UITest : TestFixtureSetup
     public async Task S4_AddNewEmployeeNegativeCase()
     {
         // Add new employee (PIM > Add Employee)
-        await _page.GetByRole(AriaRole.Link, new() { Name = "PIM" }).ClickAsync();
-        await _page.GetByRole(AriaRole.Link, new() { Name = "Add Employee" }).ClickAsync();
+        await _addEmployeePage.ClickOnTab("PIM");
+        await _addEmployeePage.ClickOnTab("Add Employee");
 
         // Verify tab is opened
         await Assertions.Expect(_page.GetByRole(AriaRole.Heading, new() { Name = "Add Employee" })).ToBeVisibleAsync();
 
         // Save empty employee details
-        await _page.GetByRole(AriaRole.Button, new() { Name = "Save" }).ClickAsync();
+        await _addEmployeePage.Save();
 
         // Verify "Required" message
         await Assertions.Expect(_page.GetByText("Required").First).ToBeVisibleAsync();
@@ -85,30 +85,24 @@ public class UITest : TestFixtureSetup
     public async Task S5_AddNewEmployeePositiveCase(User user)
     {
         // Add new employee (PIM > Add Employee)
-        await _page.GetByRole(AriaRole.Link, new() { Name = "PIM" }).ClickAsync();
-        await _page.GetByRole(AriaRole.Link, new() { Name = "Add Employee" }).ClickAsync();
+        await _addEmployeePage.ClickOnTab("PIM");
+        await _addEmployeePage.ClickOnTab("Add Employee");
 
         // Fill-in few Personal Details
-        await _page.GetByPlaceholder("First Name").FillAsync(user.FirstName!);
-        await _page.GetByPlaceholder("Last Name").FillAsync(user.LastName!);
+        await _addEmployeePage.FillWithText("First Name", user.FirstName!);
+        await _addEmployeePage.FillWithText("Last Name", user.LastName!);
 
         // Generate random id and fill it in employee id textbox
-        Random random = new Random();
-        int fourDigitNumber = random.Next(1000, 1000000);
-        await _page.GetByRole(AriaRole.Textbox).Last.FillAsync(fourDigitNumber.ToString());
+        await _addEmployeePage.ArrangeEmployeeId();
 
         // Save EmployeeId
         employeeId = await _page.GetByRole(AriaRole.Textbox).Last.InputValueAsync();
 
         // Attach picture
-        await _page.Locator("form").GetByRole(AriaRole.Img, new() { Name = "profile picture" }).ClickAsync();
-
-        // Upload file
-        var fileChooser = _page.Locator("input[type=\"file\"]");
-        await fileChooser.SetInputFilesAsync("./avatar.png");
+        await _addEmployeePage.AddImage();
 
         // Save the employee details
-        await _page.GetByRole(AriaRole.Button, new() { Name = "Save" }).ClickAsync();
+        await _addEmployeePage.Save();
 
         // Verify data has been saved
         await Assertions.Expect(_page.GetByText("Successfully Saved")).ToBeVisibleAsync();
@@ -116,23 +110,21 @@ public class UITest : TestFixtureSetup
         await Assertions.Expect(_page.GetByPlaceholder("Last Name")).ToHaveValueAsync(user.LastName!);
 
         // Navigate back to home screen
-        await _page.GetByRole(AriaRole.Link, new() { Name = "PIM" }).ClickAsync();
-        await _page.GetByRole(AriaRole.Link, new() { Name = "Employee List" }).ClickAsync();
+        await _employeeListPage.ClickOnTab("PIM");
+        await _employeeListPage.ClickOnTab("Employee List");
 
         // Verify Employee list is opened
         await Assertions.Expect(_page.GetByRole(AriaRole.Heading, new() { Name = "Employee Information" }))
             .ToBeVisibleAsync();
 
         // Search for the newly created employee details
-        await _page.Locator("div").Filter(new() { HasTextRegex = new Regex("^Employee Id$") })
-            .GetByRole(AriaRole.Textbox).FillAsync(employeeId);
-        await _page.GetByRole(AriaRole.Button, new() { Name = "Search" }).ClickAsync();
+        await _employeeListPage.SearchForEmployeeId(employeeId);
 
         // Verify search result
         await Assertions.Expect(_page.GetByText("(1) Record Found")).ToBeVisibleAsync();
 
         // Click on the search result
-        await _page.GetByText(employeeId).ClickAsync();
+        await _employeeListPage.ClickOn(employeeId);
 
         // Verify employee details after search
         await Assertions.Expect(_page.GetByPlaceholder("First Name")).ToHaveValueAsync(user.FirstName!);
@@ -147,25 +139,21 @@ public class UITest : TestFixtureSetup
     public async Task S6_DeleteCreatedUsers(User user)
     {
         // Navigate back to Employee list screen
-        await _page.GetByRole(AriaRole.Link, new() { Name = "PIM" }).ClickAsync();
-        await _page.GetByRole(AriaRole.Link, new() { Name = "Employee List" }).ClickAsync();
+        await _employeeListPage.ClickOnTab("PIM");
+        await _employeeListPage.ClickOnTab("Employee List");
 
         // Verify Employee list is opened
         await Assertions.Expect(_page.GetByRole(AriaRole.Heading, new() { Name = "Employee Information" }))
             .ToBeVisibleAsync();
 
         // Search for employee
-        await _page.Locator("div").Filter(new() { HasTextRegex = new Regex("^Employee Name$") }).GetByRole(AriaRole.Textbox).First.ClickAsync();
-        await _page.Locator("div").Filter(new() { HasTextRegex = new Regex("^Employee Name$") }).GetByRole(AriaRole.Textbox).First.FillAsync(user.FirstName + " " + user.LastName);
-
-        await _page.GetByRole(AriaRole.Button, new() { Name = "Search" }).ClickAsync();
+        await _employeeListPage.SearchForEmployeeName(user.FirstName, user.LastName);
 
         // Verify that name has been found
         await Assertions.Expect(_page.GetByRole(AriaRole.Cell, new() { Name = user.FirstName! }).First).ToBeVisibleAsync();
 
         // Delete user
-        await _page.Locator($".oxd-icon.bi-trash").First.ClickAsync();
-        await _page.GetByRole(AriaRole.Button, new() { Name = "Yes, Delete" }).ClickAsync();
+        await _employeeListPage.DeleteUser();
 
         // Verify that user has been deleted
         await Assertions.Expect(_page.GetByText("Successfully Deleted")).ToBeVisibleAsync();
