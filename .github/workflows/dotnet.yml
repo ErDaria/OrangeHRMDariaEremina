@@ -70,8 +70,8 @@ jobs:
         if: always()
         continue-on-error: true
         with:
-         ref: gh-pages
-         path: gh-pages
+         ref: master
+         path: master
 
       - name: Generate Allure Report
         uses: simple-elf/allure-report-action@v1.7
@@ -86,5 +86,5 @@ jobs:
         with:
          github_token: ${{ secrets.GITHUB_TOKEN }}
          publish_dir: allure-history
-         publish_branch: gh-pages
+         publish_branch: master
   
