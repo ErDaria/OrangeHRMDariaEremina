@@ -58,6 +58,7 @@ jobs:
       run: pwsh /home/runner/work/OrangeHRMDariaEremina/OrangeHRMDariaEremina/OrangeHRMDariaEremina/bin/Debug/net7.0/playwright.ps1 install --with-deps
     - name: Run API tests
       run:  dotnet test --filter OrangeHRMDariaEremina.Tests.APITest
+  
   report:
     needs: testAPI
     timeout-minutes: 60
